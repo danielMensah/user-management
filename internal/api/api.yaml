@@ -1,0 +1,234 @@
+openapi: "3.0.3"
+info:
+  title: User Management API
+  version: 0.0.1
+  description: User Management API for Faceit Challenge
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local server
+paths:
+  /users:
+    get:
+      summary: Get all users
+      description: Get all users
+      operationId: getUsers
+      tags:
+        - users
+      parameters:
+        - $ref: '#/components/parameters/idQuery'
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          description: A list of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUsersResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    post:
+      summary: Create a new user
+      description: Create a new user
+      operationId: createUser
+      tags:
+        - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUserResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+  /users/{id}:
+    delete:
+      summary: Delete a user
+      description: Delete a user
+      operationId: deleteUser
+      tags:
+        - users
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '204':
+          description: Deleted user
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+    put:
+      summary: Update a user
+      description: Update a user
+      operationId: updateUser
+      tags:
+        - users
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateData'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/400BadRequest'
+        '500':
+          $ref: '#/components/responses/500InternalServerError'
+
+components:
+  schemas:
+    GetUsersResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    CreateUserResponse:
+      type: object
+      required:
+        - _id
+      properties:
+        id:
+          type: string
+    User:
+      type: object
+      required:
+        - _id
+        - first_name
+        - last_name
+        - nickname
+        - email
+        - password
+        - country
+      properties:
+        _id:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        nickname:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        country:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    UserUpdateData:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        nickname:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        country:
+          type: string
+    UserCreateData:
+      type: object
+      required:
+        - first_name
+        - last_name
+        - nickname
+        - email
+        - password
+        - country
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        nickname:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        country:
+          type: string
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+
+  parameters:
+    idPath:
+      name: id
+      in: path
+      description: User ID
+      required: true
+      schema:
+        type: string
+    idQuery:
+      name: id
+      in: query
+      description: User ID
+      required: false
+      schema:
+        type: string
+    page:
+      name: page
+      in: query
+      description: Page number
+      required: true
+      schema:
+        type: integer
+        format: int64
+        default: 0
+    limit:
+      name: limit
+      in: query
+      description: Number of users per page
+      required: true
+      schema:
+        type: integer
+        format: int64
+        default: 10
+        maximum: 100
+
+  responses:
+    400BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    500InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

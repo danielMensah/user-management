@@ -1,0 +1,6 @@
+package: api
+generate:
+  echo-server: true
+  models: true
+  embedded-spec: true
+output: ./internal/api/user_management_server.gen.go
