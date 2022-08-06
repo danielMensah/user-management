@@ -2,11 +2,25 @@ openapi: "3.0.3"
 info:
   title: User Management API
   version: 0.0.1
-  description: User Management API for Faceit Challenge
+  description: User Management API
 servers:
   - url: http://localhost:8000/api/v1
     description: Local server
 paths:
+  /_healthz:
+    get:
+      summary: Health check
+      description: Returns 200 if the service is up and running
+      tags:
+        - health
+      responses:
+        "200":
+          description: Service is up and running
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: OK
   /users:
     get:
       summary: Get all users
@@ -15,7 +29,8 @@ paths:
       tags:
         - users
       parameters:
-        - $ref: '#/components/parameters/idQuery'
+        - $ref: '#/components/parameters/country'
+        - $ref: '#/components/parameters/email'
         - $ref: '#/components/parameters/page'
         - $ref: '#/components/parameters/limit'
       responses:
@@ -39,7 +54,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              $ref: '#/components/schemas/UserCreateData'
       responses:
         '201':
           description: Created user
@@ -59,7 +74,12 @@ paths:
       tags:
         - users
       parameters:
-        - $ref: '#/components/parameters/idPath'
+        - name: id
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: string
       responses:
         '204':
           description: Deleted user
@@ -74,7 +94,12 @@ paths:
       tags:
         - users
       parameters:
-        - $ref: '#/components/parameters/idPath'
+        - name: id
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
@@ -92,6 +117,7 @@ paths:
         '500':
           $ref: '#/components/responses/500InternalServerError'
 
+
 components:
   schemas:
     GetUsersResponse:
@@ -106,8 +132,8 @@ components:
       required:
         - _id
       properties:
-        id:
-          type: string
+        _id:
+          $ref: '#/components/schemas/Id'
     User:
       type: object
       required:
@@ -116,44 +142,43 @@ components:
         - last_name
         - nickname
         - email
-        - password
         - country
+        - created_at
+        - updated_at
       properties:
         _id:
-          type: string
+          $ref: '#/components/schemas/Id'
         first_name:
-          type: string
+          $ref: '#/components/schemas/FirstName'
         last_name:
-          type: string
+          $ref: '#/components/schemas/LastName'
         nickname:
-          type: string
+          $ref: '#/components/schemas/Nickname'
         email:
-          type: string
-        password:
-          type: string
+          $ref: '#/components/schemas/Email'
         country:
-          type: string
+          $ref: '#/components/schemas/Country'
         created_at:
-          type: string
-          format: date-time
+          $ref: '#/components/schemas/CreatedAt'
         updated_at:
-          type: string
-          format: date-time
+          $ref: '#/components/schemas/UpdatedAt'
     UserUpdateData:
       type: object
       properties:
         first_name:
-          type: string
+          $ref: '#/components/schemas/FirstName'
         last_name:
-          type: string
+          $ref: '#/components/schemas/LastName'
         nickname:
-          type: string
+          $ref: '#/components/schemas/Nickname'
         email:
-          type: string
+          $ref: '#/components/schemas/Email'
         password:
-          type: string
+          $ref: '#/components/schemas/Password'
         country:
-          type: string
+          $ref: '#/components/schemas/Country'
+        updated_at:
+          $ref: '#/components/schemas/UpdatedAt'
     UserCreateData:
       type: object
       required:
@@ -165,17 +190,21 @@ components:
         - country
       properties:
         first_name:
-          type: string
+          $ref: '#/components/schemas/FirstName'
         last_name:
-          type: string
+          $ref: '#/components/schemas/LastName'
         nickname:
-          type: string
+          $ref: '#/components/schemas/Nickname'
         email:
-          type: string
+          $ref: '#/components/schemas/Email'
         password:
-          type: string
+          $ref: '#/components/schemas/Password'
         country:
-          type: string
+          $ref: '#/components/schemas/Country'
+        created_at:
+          $ref: '#/components/schemas/CreatedAt'
+        updated_at:
+          $ref: '#/components/schemas/UpdatedAt'
     Error:
       type: object
       required:
@@ -184,21 +213,70 @@ components:
         message:
           type: string
 
+    Id:
+      type: string
+      x-oapi-codegen-extra-tags:
+        bson: _id,omitempty
+    FirstName:
+      type: string
+      example: John
+      x-oapi-codegen-extra-tags:
+        bson: first_name,omitempty
+    LastName:
+      type: string
+      example: Doe
+      x-oapi-codegen-extra-tags:
+        bson: last_name,omitempty
+    Nickname:
+      type: string
+      example: jd
+      x-oapi-codegen-extra-tags:
+        bson: nickname,omitempty
+    Email:
+      type: string
+      example: js@example.com
+      x-oapi-codegen-extra-tags:
+        bson: email,omitempty
+    Password:
+      type: string
+      example: worm
+      x-oapi-codegen-extra-tags:
+        bson: password,omitempty
+    Country:
+      type: string
+      example: UK
+      x-oapi-codegen-extra-tags:
+        bson: country,omitempty
+    CreatedAt:
+      type: string
+      format: date-time
+      x-oapi-codegen-extra-tags:
+        bson: created_at,omitempty
+    UpdatedAt:
+      type: string
+      format: date-time
+      x-oapi-codegen-extra-tags:
+        bson: updated_at,omitempty
+
   parameters:
-    idPath:
-      name: id
-      in: path
-      description: User ID
-      required: true
-      schema:
-        type: string
-    idQuery:
-      name: id
+    country:
+      name: country
       in: query
-      description: User ID
+      description: User country
       required: false
       schema:
         type: string
+      example:
+        country: US
+    email:
+      name: email
+      in: query
+      description: User email
+      required: false
+      schema:
+        type: string
+      example:
+        email: jd@example.com
     page:
       name: page
       in: query

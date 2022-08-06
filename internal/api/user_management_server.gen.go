@@ -19,49 +19,82 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// Country defines model for Country.
+type Country = string
+
 // CreateUserResponse defines model for CreateUserResponse.
 type CreateUserResponse struct {
-	Id *string `json:"id,omitempty"`
+	Id Id `bson:"_id,omitempty" json:"_id"`
 }
+
+// CreatedAt defines model for CreatedAt.
+type CreatedAt = time.Time
+
+// Email defines model for Email.
+type Email = string
 
 // Error defines model for Error.
 type Error struct {
 	Message string `json:"message"`
 }
 
+// FirstName defines model for FirstName.
+type FirstName = string
+
 // GetUsersResponse defines model for GetUsersResponse.
 type GetUsersResponse struct {
 	Users *[]User `json:"users,omitempty"`
 }
 
+// Id defines model for Id.
+type Id = string
+
+// LastName defines model for LastName.
+type LastName = string
+
+// Nickname defines model for Nickname.
+type Nickname = string
+
+// Password defines model for Password.
+type Password = string
+
+// UpdatedAt defines model for UpdatedAt.
+type UpdatedAt = time.Time
+
 // User defines model for User.
 type User struct {
-	Id        string     `json:"_id"`
-	Country   string     `json:"country"`
-	CreatedAt *time.Time `json:"created_at,omitempty"`
-	Email     string     `json:"email"`
-	FirstName string     `json:"first_name"`
-	LastName  string     `json:"last_name"`
-	Nickname  string     `json:"nickname"`
-	Password  string     `json:"password"`
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	Id        Id        `bson:"_id,omitempty" json:"_id"`
+	Country   Country   `bson:"country,omitempty" json:"country"`
+	CreatedAt CreatedAt `bson:"created_at,omitempty" json:"created_at"`
+	Email     Email     `bson:"email,omitempty" json:"email"`
+	FirstName FirstName `bson:"first_name,omitempty" json:"first_name"`
+	LastName  LastName  `bson:"last_name,omitempty" json:"last_name"`
+	Nickname  Nickname  `bson:"nickname,omitempty" json:"nickname"`
+	UpdatedAt UpdatedAt `bson:"updated_at,omitempty" json:"updated_at"`
+}
+
+// UserCreateData defines model for UserCreateData.
+type UserCreateData struct {
+	Country   Country    `bson:"country,omitempty" json:"country"`
+	CreatedAt *CreatedAt `bson:"created_at,omitempty" json:"created_at,omitempty"`
+	Email     Email      `bson:"email,omitempty" json:"email"`
+	FirstName FirstName  `bson:"first_name,omitempty" json:"first_name"`
+	LastName  LastName   `bson:"last_name,omitempty" json:"last_name"`
+	Nickname  Nickname   `bson:"nickname,omitempty" json:"nickname"`
+	Password  Password   `bson:"password,omitempty" json:"password"`
+	UpdatedAt *UpdatedAt `bson:"updated_at,omitempty" json:"updated_at,omitempty"`
 }
 
 // UserUpdateData defines model for UserUpdateData.
 type UserUpdateData struct {
-	Country   *string `json:"country,omitempty"`
-	Email     *string `json:"email,omitempty"`
-	FirstName *string `json:"first_name,omitempty"`
-	LastName  *string `json:"last_name,omitempty"`
-	Nickname  *string `json:"nickname,omitempty"`
-	Password  *string `json:"password,omitempty"`
+	Country   *Country   `bson:"country,omitempty" json:"country,omitempty"`
+	Email     *Email     `bson:"email,omitempty" json:"email,omitempty"`
+	FirstName *FirstName `bson:"first_name,omitempty" json:"first_name,omitempty"`
+	LastName  *LastName  `bson:"last_name,omitempty" json:"last_name,omitempty"`
+	Nickname  *Nickname  `bson:"nickname,omitempty" json:"nickname,omitempty"`
+	Password  *Password  `bson:"password,omitempty" json:"password,omitempty"`
+	UpdatedAt *UpdatedAt `bson:"updated_at,omitempty" json:"updated_at,omitempty"`
 }
-
-// IdPath defines model for idPath.
-type IdPath = string
-
-// IdQuery defines model for idQuery.
-type IdQuery = string
 
 // Limit defines model for limit.
 type Limit = int64
@@ -77,8 +110,11 @@ type N500InternalServerError = Error
 
 // GetUsersParams defines parameters for GetUsers.
 type GetUsersParams struct {
-	// User ID
-	Id *IdQuery `form:"id,omitempty" json:"id,omitempty"`
+	// User country
+	Country *Country `form:"country,omitempty" json:"country,omitempty"`
+
+	// User email
+	Email *Email `form:"email,omitempty" json:"email,omitempty"`
 
 	// Page number
 	Page Page `form:"page" json:"page"`
@@ -88,7 +124,7 @@ type GetUsersParams struct {
 }
 
 // CreateUserJSONBody defines parameters for CreateUser.
-type CreateUserJSONBody = User
+type CreateUserJSONBody = UserCreateData
 
 // UpdateUserJSONBody defines parameters for UpdateUser.
 type UpdateUserJSONBody = UserUpdateData
@@ -101,6 +137,9 @@ type UpdateUserJSONRequestBody = UpdateUserJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Health check
+	// (GET /_healthz)
+	GetHealthz(ctx echo.Context) error
 	// Get all users
 	// (GET /users)
 	GetUsers(ctx echo.Context, params GetUsersParams) error
@@ -109,15 +148,24 @@ type ServerInterface interface {
 	CreateUser(ctx echo.Context) error
 	// Delete a user
 	// (DELETE /users/{id})
-	DeleteUser(ctx echo.Context, id IdPath) error
+	DeleteUser(ctx echo.Context, id string) error
 	// Update a user
 	// (PUT /users/{id})
-	UpdateUser(ctx echo.Context, id IdPath) error
+	UpdateUser(ctx echo.Context, id string) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
+}
+
+// GetHealthz converts echo context to params.
+func (w *ServerInterfaceWrapper) GetHealthz(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetHealthz(ctx)
+	return err
 }
 
 // GetUsers converts echo context to params.
@@ -126,11 +174,18 @@ func (w *ServerInterfaceWrapper) GetUsers(ctx echo.Context) error {
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetUsersParams
-	// ------------- Optional query parameter "id" -------------
+	// ------------- Optional query parameter "country" -------------
 
-	err = runtime.BindQueryParameter("form", true, false, "id", ctx.QueryParams(), &params.Id)
+	err = runtime.BindQueryParameter("form", true, false, "country", ctx.QueryParams(), &params.Country)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter country: %s", err))
+	}
+
+	// ------------- Optional query parameter "email" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "email", ctx.QueryParams(), &params.Email)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter email: %s", err))
 	}
 
 	// ------------- Required query parameter "page" -------------
@@ -165,7 +220,7 @@ func (w *ServerInterfaceWrapper) CreateUser(ctx echo.Context) error {
 func (w *ServerInterfaceWrapper) DeleteUser(ctx echo.Context) error {
 	var err error
 	// ------------- Path parameter "id" -------------
-	var id IdPath
+	var id string
 
 	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, ctx.Param("id"), &id)
 	if err != nil {
@@ -181,7 +236,7 @@ func (w *ServerInterfaceWrapper) DeleteUser(ctx echo.Context) error {
 func (w *ServerInterfaceWrapper) UpdateUser(ctx echo.Context) error {
 	var err error
 	// ------------- Path parameter "id" -------------
-	var id IdPath
+	var id string
 
 	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, ctx.Param("id"), &id)
 	if err != nil {
@@ -221,6 +276,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
+	router.GET(baseURL+"/_healthz", wrapper.GetHealthz)
 	router.GET(baseURL+"/users", wrapper.GetUsers)
 	router.POST(baseURL+"/users", wrapper.CreateUser)
 	router.DELETE(baseURL+"/users/:id", wrapper.DeleteUser)
@@ -231,21 +287,27 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

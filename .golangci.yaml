@@ -1,0 +1,16 @@
+linters:
+  enable:
+    - cyclop
+    - asciicheck
+    - errchkjson
+    - errorlint
+    - gochecknoinits
+    - revive
+    - misspell
+    - noctx
+    - prealloc
+    - tagliatelle
+    - tenv
+    - whitespace
+  disable:
+    - govet

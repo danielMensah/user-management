@@ -3,20 +3,29 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/danielMensah/faceit-challenge/internal/api"
-	"github.com/danielMensah/faceit-challenge/internal/handler"
-	"github.com/danielMensah/faceit-challenge/internal/repository/mongo/old"
+	"github.com/danielMensah/user-management/internal/api"
+	"github.com/danielMensah/user-management/internal/config"
+	"github.com/danielMensah/user-management/internal/handler"
+	mongoRepo "github.com/danielMensah/user-management/internal/repository/mongo"
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func main() {
+	cfg, err := config.New()
+	if err != nil {
+		logrus.WithError(err).Fatal("failed to load config")
+	}
+
 	router := echo.New()
 	router.HideBanner = true
 
@@ -29,19 +38,25 @@ func main() {
 		logrus.WithError(err).Fatal("failed to get swagger")
 	}
 
-	repo, err := old.New("mongodb://mongo:27017", "faceitchallenge")
+	conn, err := mongo.Connect(context.Background(), options.Client().ApplyURI(cfg.MongoURI))
 	if err != nil {
-		logrus.WithError(err).Fatal("failed to create repository")
+		logrus.WithError(err).Fatal("failed to connect to mongo")
 	}
-	defer repo.Close()
+	defer func() {
+		if err = conn.Disconnect(context.Background()); err != nil {
+			logrus.WithError(err).Error("disconnecting from database")
+		}
+	}()
 
-	userManagement := handler.NewUserManagement(repo)
+	repo := mongoRepo.New(conn.Database(cfg.MongoDB))
+	handlers := handler.New(repo)
 
 	apiGroup := router.Group("", middleware.OapiRequestValidator(swagger))
-	api.RegisterHandlersWithBaseURL(apiGroup, userManagement, "/api/v1")
+	api.RegisterHandlersWithBaseURL(apiGroup, handlers, "/api/v1")
 
 	go func() {
-		if err = router.Start("0.0.0.0:8000"); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		addr := fmt.Sprintf("%s:%s", cfg.APIHost, cfg.APIPort)
+		if err = router.Start(addr); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logrus.WithError(err).Error("starting server")
 		}
 	}()
