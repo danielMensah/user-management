@@ -1,5 +1,8 @@
 # User Management
 
+![Status](https://github.com/danielMensah/user-management/actions/workflows/go.yml/badge.svg)
+
+
 This is a small microservice to manage access to Users.
 
 ## Requirements
