@@ -1,7 +1,7 @@
 # User Management
 
-![Status](https://github.com/danielMensah/user-management/actions/workflows/go.yml/badge.svg)
-
+![](https://github.com/danielMensah/user-management/actions/workflows/ci.yml/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/danielMensah/user-management)](https://goreportcard.com/report/github.com/danielMensah/user-management)
 
 This is a small microservice to manage access to Users.
 
